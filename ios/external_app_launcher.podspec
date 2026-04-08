@@ -13,8 +13,8 @@ A new Flutter plugin.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
-  s.public_header_files = 'Classes/**/*.h'
+  s.source_files = 'external_app_launcher/Sources/external_app_launcher/**/*.{h,m,swift}'
+  s.public_header_files = 'external_app_launcher/Sources/external_app_launcher/**/*.h'
   s.dependency 'Flutter'
   s.platform = :ios, '8.0'
 
