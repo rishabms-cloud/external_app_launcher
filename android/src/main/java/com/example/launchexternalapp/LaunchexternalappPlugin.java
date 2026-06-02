@@ -1,8 +1,10 @@
 package com.example.launchexternalapp;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.text.TextUtils;
 import android.net.Uri;
 
@@ -106,7 +108,14 @@ public class LaunchexternalappPlugin implements FlutterPlugin, MethodCallHandler
    */
   private boolean isAppInstalled(String packageName) {
     try {
-      context.getPackageManager().getPackageInfo(packageName, 0);
+      PackageManager pm = context.getPackageManager();
+      // PackageInfoFlags was introduced in API 33; the int overload is deprecated there
+      // but is the only option below it — both forms are equivalent for a flags value of 0.
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0));
+      } else {
+        pm.getPackageInfo(packageName, 0);
+      }
       return true;
     } catch (PackageManager.NameNotFoundException ignored) {
       return false;
@@ -137,14 +146,25 @@ public class LaunchexternalappPlugin implements FlutterPlugin, MethodCallHandler
       Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(packageName);
       if (launchIntent != null) {
         launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(launchIntent);
+        try {
+          context.startActivity(launchIntent);
+        } catch (ActivityNotFoundException e) {
+          // isAppInstalled passed, but the app could be uninstalled in the
+          // window between that check and here (TOCTOU). ActivityNotFoundException
+          // is unchecked, so without this catch it would silently crash the host app.
+          return "something went wrong";
+        }
         return "app_opened";
       }
-    } else if (!"false".equals(openStore)) { // Fixed incorrect string comparison
+    } else if (!"false".equals(openStore)) {
       Intent intent1 = new Intent(Intent.ACTION_VIEW);
       intent1.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
       intent1.setData(Uri.parse("https://play.google.com/store/apps/details?id=" + packageName));
-      context.startActivity(intent1);
+      try {
+        context.startActivity(intent1);
+      } catch (ActivityNotFoundException e) {
+        return "something went wrong";
+      }
       return "navigated_to_store";
     }
     return "something went wrong";
@@ -166,21 +186,34 @@ public class LaunchexternalappPlugin implements FlutterPlugin, MethodCallHandler
       Intent intent = Intent.parseUri(intentUriString, Intent.URI_INTENT_SCHEME);
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
       if (intent.resolveActivity(context.getPackageManager()) != null) {
-        context.startActivity(intent);
+        try {
+          context.startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+          // Guard against the app being uninstalled between resolveActivity and here.
+          return "something went wrong";
+        }
         return "app_opened";
       }
       if (!"false".equals(openStore)) {
         if (appStoreLink != null && !appStoreLink.isEmpty()) {
           Intent view = new Intent(Intent.ACTION_VIEW, Uri.parse(appStoreLink));
           view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-          context.startActivity(view);
+          try {
+            context.startActivity(view);
+          } catch (ActivityNotFoundException e) {
+            return "something went wrong";
+          }
           return "navigated_to_store";
         }
         if (packageName != null && !packageName.isEmpty()) {
           Intent play = new Intent(Intent.ACTION_VIEW);
           play.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
           play.setData(Uri.parse("https://play.google.com/store/apps/details?id=" + packageName));
-          context.startActivity(play);
+          try {
+            context.startActivity(play);
+          } catch (ActivityNotFoundException e) {
+            return "something went wrong";
+          }
           return "navigated_to_store";
         }
       }

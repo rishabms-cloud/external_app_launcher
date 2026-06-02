@@ -98,7 +98,8 @@ class LaunchApp {
           Platform.isIOS ? iosUrlScheme! : androidPackageName!;
     }
 
-    return await _channel.invokeMethod('openApp', args).then((value) {
+    try {
+      final value = await _channel.invokeMethod('openApp', args);
       if (value == "app_opened") {
         print("app opened successfully");
         return 1;
@@ -116,6 +117,14 @@ class LaunchApp {
         }
         return 0;
       }
-    });
+    } on PlatformException catch (e) {
+      // Thrown by the Flutter framework when the native side calls result.error().
+      print("Failed to open app: ${e.message}");
+      return 0;
+    } catch (e) {
+      // Catches MissingPluginException (plugin not registered) and anything else unexpected.
+      print("Failed to open app: $e");
+      return 0;
+    }
   }
 }
