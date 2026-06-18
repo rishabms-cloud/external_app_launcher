@@ -148,7 +148,7 @@ public class LaunchexternalappPlugin implements FlutterPlugin, MethodCallHandler
         launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
           context.startActivity(launchIntent);
-        } catch (ActivityNotFoundException e) {
+        } catch (ActivityNotFoundException | SecurityException e) {
           // isAppInstalled passed, but the app could be uninstalled in the
           // window between that check and here (TOCTOU). ActivityNotFoundException
           // is unchecked, so without this catch it would silently crash the host app.
@@ -162,7 +162,7 @@ public class LaunchexternalappPlugin implements FlutterPlugin, MethodCallHandler
       intent1.setData(Uri.parse("https://play.google.com/store/apps/details?id=" + packageName));
       try {
         context.startActivity(intent1);
-      } catch (ActivityNotFoundException e) {
+      } catch (ActivityNotFoundException | SecurityException e) {
         return "something went wrong";
       }
       return "navigated_to_store";
@@ -188,7 +188,7 @@ public class LaunchexternalappPlugin implements FlutterPlugin, MethodCallHandler
       if (intent.resolveActivity(context.getPackageManager()) != null) {
         try {
           context.startActivity(intent);
-        } catch (ActivityNotFoundException e) {
+        } catch (ActivityNotFoundException | SecurityException e) {
           // Guard against the app being uninstalled between resolveActivity and here.
           return "something went wrong";
         }
@@ -200,7 +200,7 @@ public class LaunchexternalappPlugin implements FlutterPlugin, MethodCallHandler
           view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
           try {
             context.startActivity(view);
-          } catch (ActivityNotFoundException e) {
+          } catch (ActivityNotFoundException | SecurityException e) {
             return "something went wrong";
           }
           return "navigated_to_store";
@@ -211,7 +211,7 @@ public class LaunchexternalappPlugin implements FlutterPlugin, MethodCallHandler
           play.setData(Uri.parse("https://play.google.com/store/apps/details?id=" + packageName));
           try {
             context.startActivity(play);
-          } catch (ActivityNotFoundException e) {
+          } catch (ActivityNotFoundException | SecurityException e) {
             return "something went wrong";
           }
           return "navigated_to_store";
